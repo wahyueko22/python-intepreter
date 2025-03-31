@@ -532,6 +532,61 @@ class Interpreter:
         tree = self.parser.parse()
         return self.visit(tree)
 
+
+def print_ast(node, indent=0):
+    """Helper function to recursively print the AST structure"""
+    # Print current node with indentation
+    indent_str = '  ' * indent
+    node_type = type(node).__name__
+    
+    if isinstance(node, Num):
+        print(f"{indent_str}{node_type}({node.value})")
+    elif isinstance(node, String):
+        print(f"{indent_str}{node_type}(\"{node.value}\")")
+    elif isinstance(node, Var):
+        print(f"{indent_str}{node_type}({node.value})")
+    elif isinstance(node, BinOp):
+        print(f"{indent_str}{node_type}({node.op.value})")
+        print_ast(node.left, indent + 1)
+        print_ast(node.right, indent + 1)
+    elif isinstance(node, UnaryOp):
+        print(f"{indent_str}{node_type}({node.op.value})")
+        print_ast(node.expr, indent + 1)
+    elif isinstance(node, Assign):
+        print(f"{indent_str}{node_type}({node.op.value})")
+        print_ast(node.left, indent + 1)
+        print_ast(node.right, indent + 1)
+    elif isinstance(node, Compound):
+        print(f"{indent_str}{node_type}")
+        for child in node.children:
+            print_ast(child, indent + 1)
+    elif isinstance(node, Print):
+        print(f"{indent_str}{node_type}")
+        print_ast(node.expr, indent + 1)
+    elif isinstance(node, If):
+        print(f"{indent_str}{node_type}")
+        print(f"{indent_str}  Condition:")
+        print_ast(node.condition, indent + 2)
+        print(f"{indent_str}  Then:")
+        print_ast(node.body, indent + 2)
+        if node.else_body:
+            print(f"{indent_str}  Else:")
+            print_ast(node.else_body, indent + 2)
+    elif isinstance(node, While):
+        print(f"{indent_str}{node_type}")
+        print(f"{indent_str}  Condition:")
+        print_ast(node.condition, indent + 2)
+        print(f"{indent_str}  Do:")
+        print_ast(node.body, indent + 2)
+    elif isinstance(node, Condition):
+        print(f"{indent_str}{node_type}({node.op.value})")
+        print_ast(node.left, indent + 1)
+        print_ast(node.right, indent + 1)
+    elif isinstance(node, NoOp):
+        print(f"{indent_str}{node_type}")
+    else:
+        print(f"{indent_str}Unknown node: {node_type}")
+
 def main():
     while True:
         try:
@@ -541,15 +596,47 @@ def main():
             
         if not text:
             continue
-            
+
+        # First lexer for displaying tokens
         lexer = Lexer(text)
-        parser = Parser(lexer)
-        interpreter = Interpreter(parser)
+        print("Lexical Analysis Results:")
+        all_tokens = []
+        token = lexer.get_next_token()
+        while token.type != Token.EOF:
+            all_tokens.append(token)
+            token = lexer.get_next_token()
+        all_tokens.append(token)  # Add the EOF token
         
+        # Print the tokens
+        for token in all_tokens:
+            print(f"  {token}")
+        print("End of Lexical Analysis Results")
+            
+        # Get the AST from the parser
         try:
+            #print the parser
+            lexer = Lexer(text) 
+            parser = Parser(lexer)
+            ast = parser.parse()
+            
+            # Print the AST structure
+            print("AST Structure:")
+            print_ast(ast)
+
+            #process result by init from start
+            lexer = Lexer(text) 
+            parser = Parser(lexer)
+            
+            # Continue with interpretation
+            interpreter = Interpreter(parser)
+            print("Interpreter Result:")
             interpreter.interpret()
         except Exception as e:
             print(f"Error: {e}")
+
+        
+
+
 
 if __name__ == '__main__':
     main()
